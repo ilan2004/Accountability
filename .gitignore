@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -36,9 +37,10 @@ yarn-error.log*
 # vercel
 .vercel
 
-# whatsapp service cache
+# whatsapp service cache and node_modules
 .wwebjs_auth/
 .wwebjs_cache/
+whatsapp-service/node_modules/
 
 # typescript
 *.tsbuildinfo
