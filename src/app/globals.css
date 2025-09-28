@@ -1,26 +1,452 @@
 @import "tailwindcss";
 
+/* Import Tanker font */
+@font-face {
+  font-family: 'Tanker';
+  src: url('/Tanker_Complete/Fonts/WEB/fonts/Tanker-Regular.woff2') format('woff2'),
+       url('/Tanker_Complete/Fonts/WEB/fonts/Tanker-Regular.woff') format('woff'),
+       url('/Tanker_Complete/Fonts/WEB/fonts/Tanker-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* === CORE COLORS === */
+  --color-mint-500: rgb(130, 237, 166);
+  --color-green-900: rgb(3, 89, 77);
+  --color-lilac-300: rgb(246, 187, 253);
+  --color-orange-500: rgb(255, 145, 36);
+  --color-amber-400: rgb(253, 192, 104);
+  --color-cyan-200: rgb(174, 251, 255);
+  --color-blue-400: rgb(88, 154, 240);
+  --color-purple-400: rgb(200, 140, 253);
+  --color-cream: rgb(249, 248, 244);
+  --color-pink-200: rgb(252, 205, 220);
+  --color-pink-500: rgb(252, 86, 129);
+  --color-yellow-200: rgb(255, 255, 148);
+  --color-lime-300: rgb(216, 226, 104);
+  --color-teal-300: rgb(137, 169, 161);
+  --color-green-900-20: rgba(3, 89, 77, 0.2);
+  
+  /* Theme variables */
+  --primary: var(--color-mint-500);
+  --secondary: var(--color-green-900);
+  --accent: var(--color-pink-500);
+  --text-primary: var(--color-green-900);
+  --surface: var(--color-cream);
+  --progress: var(--color-mint-500);
+  --bg-pattern: var(--color-mint-500);
+  
+  /* Fonts */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-tanker: "Tanker", cursive;
+  --font-accent: "Homemade Apple", cursive;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Generic QuestBoard CSS Styles */
+
+.quest-board-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.quest-board {
+  background: #ffffff;
+  border: 3px solid var(--secondary);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 0 var(--color-green-900), 0 8px 24px var(--color-green-900-20);
+  font-family: var(--font-sans);
+}
+
+.quest-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quest-board-title h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-tanker);
+  letter-spacing: 0.5px;
+}
+
+.quest-board-date {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Progress Bar */
+.progress-bar {
+  height: 10px;
+  width: 100%;
+  background-color: var(--color-green-900-20);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--color-lime-300));
+  transition: width 0.4s ease;
+  border-radius: 9999px;
+  box-shadow: 0 2px 4px var(--color-green-900-20);
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+/* Add Quest Form */
+.add-quest-form {
+  margin-bottom: 20px;
+  padding: 16px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-group-small {
+  flex: 0 0 80px;
+  min-width: 80px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.quest-input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 3px solid var(--secondary);
+  border-radius: 16px;
+  font-size: 0.875rem;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 0 var(--color-green-900), 0 4px 8px var(--color-green-900-20);
+}
+
+.quest-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 2px 0 var(--primary), 0 6px 12px var(--color-green-900-20);
+  transform: translateY(-1px);
+}
+
+.quest-input::placeholder {
+  color: #94a3b8;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.quest-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid;
+  min-height: 36px;
+}
+
+.quest-btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--color-lime-300));
+  color: var(--secondary);
+  border-color: var(--secondary);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--color-green-900), 0 8px 16px var(--color-green-900-20);
+}
+
+.quest-btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-lime-300), var(--primary));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--color-green-900), 0 12px 24px var(--color-green-900-20);
+}
+
+.quest-btn-secondary {
+  background-color: #ffffff;
+  color: var(--secondary);
+  border-color: var(--secondary);
+  font-weight: 600;
+  box-shadow: 0 3px 0 var(--color-green-900), 0 6px 12px var(--color-green-900-20);
+}
+
+.quest-btn-secondary:hover {
+  background-color: var(--color-cream);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--color-green-900), 0 8px 16px var(--color-green-900-20);
+}
+
+/* Quest List */
+.quest-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quest-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border: 3px solid var(--color-green-900-20);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 0 var(--color-green-900-20), 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quest-item:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 var(--primary), 0 8px 16px var(--color-green-900-20);
+}
+
+.quest-item-completed {
+  background: linear-gradient(135deg, var(--primary), var(--color-cyan-200));
+  border-color: var(--secondary);
+  box-shadow: 0 4px 0 var(--secondary), 0 8px 16px var(--color-green-900-20);
+}
+
+.quest-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.quest-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #2563eb;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.quest-title {
+  font-size: 0.875rem;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+}
+
+.quest-title-completed {
+  text-decoration: line-through;
+  color: #64748b;
+}
+
+.quest-check-icon {
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.quest-points {
+  background: linear-gradient(135deg, var(--color-amber-400), var(--color-orange-500));
+  color: var(--secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  border: 2px solid var(--secondary);
+  box-shadow: 0 2px 0 var(--color-green-900), 0 4px 8px rgba(0, 0, 0, 0.15);
+  font-family: var(--font-tanker);
+  letter-spacing: 0.5px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .quest-board-container {
+    padding: 12px;
+  }
+  
+  .quest-board {
+    padding: 16px;
+  }
+  
+  .quest-board-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .quest-board-title h2 {
+    font-size: 1.125rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+  }
+  
+  .form-group-small {
+    flex: none;
+    min-width: auto;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .quest-btn {
+    width: 100%;
+  }
+  
+  .quest-item {
+    padding: 10px 12px;
+  }
+  
+  .quest-title {
+    font-size: 0.8rem;
+  }
+  
+  .quest-points {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
+}
+
+/* Dark theme support (optional) */
+@media (prefers-color-scheme: dark) {
+  .quest-board {
+    background: #1e293b;
+    border-color: #3b82f6;
+    color: #f1f5f9;
+  }
+  
+  .quest-board-title h2 {
+    color: #f1f5f9;
+  }
+  
+  .quest-board-date {
+    color: #94a3b8;
+  }
+  
+  .progress-bar {
+    background-color: #334155;
+  }
+  
+  .progress-fill {
+    background-color: #3b82f6;
+  }
+  
+  .progress-text {
+    color: #94a3b8;
+  }
+  
+  .add-quest-form {
+    background-color: #334155;
+    border-color: #475569;
+  }
+  
+  .form-group label {
+    color: #94a3b8;
+  }
+  
+  .quest-input {
+    background: #1e293b;
+    border-color: #3b82f6;
+    color: #f1f5f9;
+  }
+  
+  .quest-input::placeholder {
+    color: #64748b;
+  }
+  
+  .quest-btn-secondary {
+    background-color: #334155;
+    color: #cbd5e1;
+    border-color: #475569;
+  }
+  
+  .quest-btn-secondary:hover {
+    background-color: #475569;
+    border-color: #64748b;
+  }
+  
+  .quest-item {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+  
+  .quest-item:hover {
+    border-color: #475569;
+  }
+  
+  .quest-item-completed {
+    background-color: #1e3a8a;
+    border-color: #3b82f6;
+  }
+  
+  .quest-title {
+    color: #f1f5f9;
+  }
+  
+  .quest-title-completed {
+    color: #94a3b8;
+  }
+  
+  .quest-points {
+    background-color: #1e40af;
+    color: #dbeafe;
+  }
 }
