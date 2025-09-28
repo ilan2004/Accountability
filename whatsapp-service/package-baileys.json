@@ -1,0 +1,35 @@
+{
+  "name": "whatsapp-accountability-service-baileys",
+  "version": "2.0.0",
+  "description": "WhatsApp Baileys automation service for accountability partner notifications",
+  "main": "server-baileys.js",
+  "engines": {
+    "node": ">=17.0.0"
+  },
+  "scripts": {
+    "start": "node server-baileys.js",
+    "dev": "nodemon server-baileys.js",
+    "start:old": "node server.js",
+    "dev:old": "nodemon server.js"
+  },
+  "dependencies": {
+    "baileys": "^6.8.0",
+    "@hapi/boom": "^10.0.1",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "whatsapp",
+    "baileys",
+    "automation",
+    "accountability",
+    "notifications",
+    "websocket"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

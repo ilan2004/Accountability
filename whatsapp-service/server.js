@@ -1,7 +1,9 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { makeWASocket, DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const express = require('express');
 const cors = require('cors');
 const qrcode = require('qrcode-terminal');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -10,43 +12,82 @@ const PORT = process.env.PORT || 3002;
 app.use(cors());
 app.use(express.json());
 
-// WhatsApp Client
-const client = new Client({
-    authStrategy: new LocalAuth({
-        clientId: "accountability-partner"
-    }),
-    puppeteer: {
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    }
-});
-
+// WhatsApp Socket
+let sock = null;
 let isClientReady = false;
 
-// WhatsApp Client Events
-client.on('qr', (qr) => {
-    console.log('🔗 QR Code received! Scan it with WhatsApp:');
-    qrcode.generate(qr, { small: true });
-    console.log('📱 Open WhatsApp on your phone → Settings → Linked Devices → Link a Device');
-});
+// Auth state directory
+const authDir = path.join(__dirname, '.wwebjs_auth', 'baileys_auth');
+if (!fs.existsSync(authDir)) {
+    fs.mkdirSync(authDir, { recursive: true });
+}
 
-client.on('ready', () => {
-    console.log('✅ WhatsApp Client is ready!');
-    isClientReady = true;
-});
+// Initialize WhatsApp connection
+async function connectToWhatsApp() {
+    try {
+        const { state, saveCreds } = await useMultiFileAuthState(authDir);
+        
+        sock = makeWASocket({
+            auth: state,
+            printQRInTerminal: false, // We'll handle QR ourselves
+            logger: {
+                level: 'warn',
+                child: () => ({}),
+                info: () => {},
+                error: console.error,
+                warn: console.warn,
+                debug: () => {},
+                trace: () => {},
+                fatal: console.error
+            },
+            browser: ['Accountability Partner', 'Chrome', '4.0.0']
+        });
 
-client.on('authenticated', () => {
-    console.log('🔐 WhatsApp Client authenticated!');
-});
+        // Handle connection updates
+        sock.ev.on('connection.update', (update) => {
+            const { connection, lastDisconnect, qr } = update;
+            
+            if (qr) {
+                console.log('🔗 QR Code received! Scan it with WhatsApp:');
+                qrcode.generate(qr, { small: true });
+                console.log('📱 Open WhatsApp on your phone → Settings → Linked Devices → Link a Device');
+            }
+            
+            if (connection === 'close') {
+                const shouldReconnect = (lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
+                console.log('📱 Connection closed due to:', lastDisconnect?.error, ', reconnecting:', shouldReconnect);
+                
+                if (shouldReconnect) {
+                    connectToWhatsApp();
+                } else {
+                    console.log('❌ WhatsApp logged out. Please restart the service.');
+                    isClientReady = false;
+                }
+            } else if (connection === 'open') {
+                console.log('✅ WhatsApp Client is ready!');
+                isClientReady = true;
+            }
+        });
 
-client.on('auth_failure', (msg) => {
-    console.error('❌ Authentication failed:', msg);
-});
+        // Handle credentials update
+        sock.ev.on('creds.update', saveCreds);
+        
+        // Handle messages (optional - for future features)
+        sock.ev.on('messages.upsert', ({ messages, type }) => {
+            if (type === 'notify') {
+                for (const msg of messages) {
+                    if (!msg.key.fromMe && msg.message) {
+                        console.log('📨 Received message:', msg.key.remoteJid, msg.message);
+                    }
+                }
+            }
+        });
 
-client.on('disconnected', (reason) => {
-    console.log('📱 WhatsApp Client was logged out:', reason);
-    isClientReady = false;
-});
+    } catch (error) {
+        console.error('❌ Error connecting to WhatsApp:', error);
+        setTimeout(connectToWhatsApp, 5000);
+    }
+}
 
 // API Routes
 app.get('/health', (req, res) => {
@@ -59,7 +100,7 @@ app.get('/health', (req, res) => {
 
 app.post('/send-message', async (req, res) => {
     try {
-        if (!isClientReady) {
+        if (!isClientReady || !sock) {
             return res.status(503).json({ 
                 error: 'WhatsApp client not ready. Please scan QR code first.' 
             });
@@ -76,15 +117,15 @@ app.post('/send-message', async (req, res) => {
         // Format phone number (remove any non-digits and add country code if needed)
         let formattedNumber = number.replace(/\D/g, '');
         
-        // Add country code if not present (assuming +91 for India, change as needed)
+        // Add country code if not present (assuming +1 for US, change as needed)
         if (formattedNumber.length === 10) {
-            formattedNumber = '91' + formattedNumber;
+            formattedNumber = '1' + formattedNumber;
         }
         
-        const chatId = formattedNumber + '@c.us';
+        const jid = formattedNumber + '@s.whatsapp.net';
 
-        // Send message
-        await client.sendMessage(chatId, message);
+        // Send message using Baileys
+        await sock.sendMessage(jid, { text: message });
         
         console.log(`📤 Message sent to ${formattedNumber}: ${message.substring(0, 50)}...`);
         
@@ -114,14 +155,21 @@ app.post('/test-message', async (req, res) => {
 
         const testMessage = `🧪 *Test Message*\n\nThis is a test message from your Accountability Partner system!\n\nIf you receive this, WhatsApp integration is working perfectly! 🎉\n\nTime: ${new Date().toLocaleString()}`;
         
-        await fetch('http://localhost:3001/send-message', {
+        // Send directly using our send-message endpoint
+        const response = await fetch(`http://localhost:${PORT}/send-message`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ number, message: testMessage })
         });
 
-        res.json({ success: true, message: 'Test message sent!' });
+        if (response.ok) {
+            res.json({ success: true, message: 'Test message sent!' });
+        } else {
+            const error = await response.json();
+            res.status(500).json({ error: 'Failed to send test message', details: error });
+        }
     } catch (error) {
+        console.error('Error in test-message:', error);
         res.status(500).json({ error: 'Failed to send test message' });
     }
 });
@@ -130,17 +178,19 @@ app.post('/test-message', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 WhatsApp Service running on port ${PORT}`);
     console.log(`📡 Health check: http://localhost:${PORT}/health`);
-    console.log('🔄 Starting WhatsApp Client...');
+    console.log('🔄 Starting WhatsApp Connection...');
+    
+    // Initialize WhatsApp connection
+    connectToWhatsApp();
 });
-
-// Initialize WhatsApp Client
-client.initialize();
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
     console.log('🛑 Shutting down WhatsApp Service...');
-    await client.destroy();
+    if (sock) {
+        sock.end();
+    }
     process.exit(0);
 });
 
-module.exports = { app, client };
+module.exports = { app, sock };
